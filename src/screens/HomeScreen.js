@@ -7,12 +7,11 @@ import {
   Pressable,
   Switch,
   Alert,
-  SafeAreaView,
-  Platform,
-  StatusBar as RNStatusBar,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { useAlarms } from '../context/AlarmContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DAYS = [
   { key: 'mon', short: 'M', label: 'Mon', jsDay: 1, index1: 1 },
@@ -216,6 +215,12 @@ export default function HomeScreen({ navigation }) {
         accessibilityRole="button"
         accessibilityLabel={`Alarm at ${time} ${ampm}, ${isEnabled ? 'enabled' : 'disabled'}`}
       >
+        <BlurView
+          intensity={48}
+          tint="light"
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.cardContent}>
           {/* Time row */}
           <View style={styles.timeRow}>
@@ -283,9 +288,9 @@ export default function HomeScreen({ navigation }) {
           <Switch
             value={isEnabled}
             onValueChange={() => handleToggle(alarm)}
-            trackColor={{ false: '#333333', true: '#6C63FF' }}
+            trackColor={{ false: '#D1D1D6', true: '#111111' }}
             thumbColor="#FFFFFF"
-            ios_backgroundColor="#333333"
+            ios_backgroundColor="#D1D1D6"
           />
         </View>
       </Pressable>
@@ -302,7 +307,7 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Screen Header */}
       <View style={styles.header}>
@@ -344,8 +349,8 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#121212',
-    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight || 20 : 0,
+    backgroundColor: '#F7F7F9',
+    paddingTop: 0,
   },
   header: {
     paddingHorizontal: 20,
@@ -359,7 +364,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#111111',
     letterSpacing: -0.5,
   },
   headerEmoji: {
@@ -376,8 +381,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.68)',
+    borderRadius: 24,
     paddingVertical: 16,
     paddingHorizontal: 18,
     marginBottom: 12,
@@ -385,17 +390,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#262626',
-    shadowColor: '#000000',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#7A7A85',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 4,
+    overflow: 'hidden',
   },
   cardDisabled: {
     opacity: 0.65,
-    backgroundColor: '#181818',
-    borderColor: '#202020',
+    backgroundColor: 'rgba(245, 245, 247, 0.82)',
+    borderColor: '#E5E5EA',
   },
   cardPressed: {
     opacity: 0.85,
@@ -412,26 +418,26 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 34,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#111111',
     letterSpacing: -0.5,
   },
   ampmText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#111111',
     marginLeft: 6,
   },
   textDisabled: {
-    color: '#888888',
+    color: '#6B6B73',
   },
   label: {
     fontSize: 14,
-    color: '#888888',
+    color: '#6B6B73',
     marginTop: 2,
     marginBottom: 12,
   },
   labelDisabled: {
-    color: '#555555',
+    color: '#8E8E93',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -447,26 +453,26 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#262626',
+    backgroundColor: '#E5E5EA',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayDotActive: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#111111',
   },
   dayDotActiveDisabled: {
-    backgroundColor: '#3E386B',
+    backgroundColor: '#D1D1D6',
   },
   dayLetter: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#555555',
+    color: '#8E8E93',
   },
   dayLetterActive: {
     color: '#FFFFFF',
   },
   dayLetterActiveDisabled: {
-    color: '#888888',
+    color: '#8E8E93',
   },
   indicatorsRight: {
     flexDirection: 'row',
@@ -498,12 +504,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#111111',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#888888',
+    color: '#6B6B73',
     textAlign: 'center',
   },
   fab: {
@@ -513,10 +519,10 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#111111',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6C63FF',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
     shadowRadius: 10,

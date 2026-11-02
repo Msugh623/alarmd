@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import {
-  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationLightTheme,
   NavigationContainer,
   createNavigationContainerRef,
 } from '@react-navigation/native';
@@ -17,15 +17,15 @@ export const navigationRef = createNavigationContainerRef();
 
 const Stack = createNativeStackNavigator();
 
-export const DarkTheme = {
-  ...NavigationDarkTheme,
+export const LightTheme = {
+  ...NavigationLightTheme,
   colors: {
-    ...NavigationDarkTheme.colors,
-    primary: '#6C63FF',
-    background: '#121212',
-    card: '#1E1E1E',
-    text: '#FFFFFF',
-    border: '#2A2A2A',
+    ...NavigationLightTheme.colors,
+    primary: '#111111',
+    background: '#F7F7F9',
+    card: '#FFFFFF',
+    text: '#111111',
+    border: '#E5E5EA',
     notification: '#FF4757',
   },
 };
@@ -48,7 +48,7 @@ export default function AppNavigator() {
   return (
     <NavigationContainer
       ref={navigationRef}
-      theme={DarkTheme}
+      theme={LightTheme}
       onReady={handleReady}
     >
       <Stack.Navigator

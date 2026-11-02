@@ -1,5 +1,8 @@
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance } from 'expo-notifications';
 import { Platform } from 'react-native';
+
+const ANDROID_ALARM_CHANNEL_ID = 'alarms-v2';
 
 // Configure notification handler — show notification even when app is in foreground
 Notifications.setNotificationHandler({
@@ -15,6 +18,15 @@ Notifications.setNotificationHandler({
  * Request notification permissions
  */
 export async function requestPermissions() {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(ANDROID_ALARM_CHANNEL_ID, {
+      name: 'Alarms',
+      importance: AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 250, 500],
+      lightColor: '#111111',
+    });
+  }
+
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -26,22 +38,6 @@ export async function requestPermissions() {
   if (finalStatus !== 'granted') {
     console.warn('Notification permissions not granted');
     return false;
-  }
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('alarms', {
-      name: 'Alarms',
-      importance: Notifications.AndroidImportance.MAX,
-      sound: 'default',
-      audioAttributes: {
-        usage: Notifications.AndroidAudioUsage.ALARM,
-        contentType: Notifications.AndroidAudioContentType.SONIFICATION,
-      },
-      vibrationPattern: [0, 500, 250, 500],
-      lightColor: '#6C63FF',
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      bypassDnd: true,
-    });
   }
 
   return true;
@@ -81,7 +77,7 @@ export async function scheduleAlarm(alarm) {
             weekday: dayMapping[i],
             hour,
             minute,
-            channelId: 'alarms',
+            channelId: ANDROID_ALARM_CHANNEL_ID,
           },
           identifier: `${alarm.id}_day_${i}`,
         });
@@ -112,7 +108,7 @@ export async function scheduleAlarm(alarm) {
       trigger: {
         type: 'timeInterval',
         seconds: secondsUntilAlarm,
-        channelId: 'alarms',
+        channelId: ANDROID_ALARM_CHANNEL_ID,
       },
       identifier: `${alarm.id}_once`,
     });

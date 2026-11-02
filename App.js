@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AlarmProvider, useAlarms } from './src/context/AlarmContext';
 import AppNavigator, { navigationRef } from './src/navigation/AppNavigator';
 import { requestPermissions } from './src/utils/alarmScheduler';
@@ -51,7 +52,7 @@ function AppContent() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <AppNavigator />
     </>
   );
@@ -59,8 +60,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AlarmProvider>
-      <AppContent />
-    </AlarmProvider>
+    <SafeAreaProvider>
+      <AlarmProvider>
+        <AppContent />
+      </AlarmProvider>
+    </SafeAreaProvider>
   );
 }

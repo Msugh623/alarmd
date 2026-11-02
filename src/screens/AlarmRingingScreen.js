@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   Animated,
   Vibration,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import { useAlarms } from '../context/AlarmContext';
+import GlassSurface from '../components/GlassSurface';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ALARM_SOUND_URL =
   'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg';
@@ -229,7 +230,7 @@ export default function AlarmRingingScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F7F7F9" />
 
       {/* Top Urgent Status Banner */}
       <View style={styles.topSection}>
@@ -262,13 +263,15 @@ export default function AlarmRingingScreen({ navigation, route }) {
             },
           ]}
         >
-          <View style={styles.timeRow}>
-            <Text style={styles.timeText}>{currentTime.time}</Text>
-            <Text style={styles.ampmText}>{currentTime.ampm}</Text>
-          </View>
-          <Text style={styles.alarmLabel} numberOfLines={2}>
-            {alarmLabel}
-          </Text>
+          <GlassSurface style={styles.clockGlass}>
+            <View style={styles.timeRow}>
+              <Text style={styles.timeText}>{currentTime.time}</Text>
+              <Text style={styles.ampmText}>{currentTime.ampm}</Text>
+            </View>
+            <Text style={styles.alarmLabel} numberOfLines={2}>
+              {alarmLabel}
+            </Text>
+          </GlassSurface>
         </Animated.View>
       </View>
 
@@ -314,7 +317,7 @@ export default function AlarmRingingScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
+    backgroundColor: '#F7F7F9',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -328,9 +331,9 @@ const styles = StyleSheet.create({
   urgentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 71, 87, 0.2)',
-    borderColor: '#FF4757',
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.76)',
+    borderColor: 'rgba(17, 17, 17, 0.08)',
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -344,14 +347,14 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   urgentBadgeText: {
-    color: '#FF4757',
+    color: '#111111',
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
   dateText: {
-    color: '#8E8E93',
+    color: '#6B6B73',
     fontSize: 16,
     fontWeight: '500',
     letterSpacing: 0.5,
@@ -368,14 +371,27 @@ const styles = StyleSheet.create({
     width: 290,
     height: 290,
     borderRadius: 145,
-    backgroundColor: 'rgba(255, 71, 87, 0.22)',
-    borderColor: '#FF4757',
-    borderWidth: 2,
+    backgroundColor: 'rgba(255, 71, 87, 0.08)',
+    borderColor: 'rgba(255, 71, 87, 0.18)',
+    borderWidth: 1,
   },
   clockContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+  },
+  clockGlass: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 280,
+    minHeight: 220,
+    paddingHorizontal: 24,
+    paddingVertical: 36,
+    borderRadius: 36,
+    shadowColor: '#7A7A85',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.14,
+    shadowRadius: 26,
+    elevation: 5,
   },
   timeRow: {
     flexDirection: 'row',
@@ -383,14 +399,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timeText: {
-    color: '#FFFFFF',
+    color: '#111111',
     fontSize: 72,
     fontWeight: '800',
     letterSpacing: 2,
     fontVariant: ['tabular-nums'],
   },
   ampmText: {
-    color: '#FF4757',
+    color: '#6B6B73',
     fontSize: 22,
     fontWeight: '700',
     marginLeft: 6,
@@ -398,7 +414,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   alarmLabel: {
-    color: '#E0E0E0',
+    color: '#333333',
     fontSize: 24,
     fontWeight: '600',
     textAlign: 'center',
@@ -416,13 +432,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   photoButton: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#111111',
     width: '100%',
     paddingVertical: 18,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6C63FF',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.6,
     shadowRadius: 16,
@@ -435,28 +451,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   dismissButton: {
-    backgroundColor: '#1E1E1E',
-    borderColor: '#FF4757',
-    borderWidth: 2,
+    backgroundColor: '#111111',
+    borderColor: '#111111',
+    borderWidth: 1,
     width: '100%',
     paddingVertical: 18,
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF4757',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
   dismissButtonText: {
-    color: '#FF4757',
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   instructionText: {
-    color: '#8E8E93',
+    color: '#6B6B73',
     fontSize: 13,
     textAlign: 'center',
     marginTop: 14,

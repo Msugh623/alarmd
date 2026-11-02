@@ -3,20 +3,19 @@ import {
   StyleSheet,
   Text,
   View,
-  FlatList,
   TextInput,
   TouchableOpacity,
   Pressable,
   ScrollView,
   Image,
   Alert,
-  SafeAreaView,
   Platform,
-  StatusBar as RNStatusBar,
   Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useAlarms } from '../context/AlarmContext';
+import GlassSurface from '../components/GlassSurface';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -164,15 +163,15 @@ function WheelColumn({
   formatItem,
   width = 68,
 }) {
-  const flatListRef = useRef(null);
+  const scrollViewRef = useRef(null);
   const isUserScrollingRef = useRef(false);
   const selectedIndex = items.findIndex((it) => it === selectedValue);
 
   // Sync scroll position when selectedValue changes externally
   useEffect(() => {
     if (!isUserScrollingRef.current && selectedIndex >= 0) {
-      flatListRef.current?.scrollToOffset({
-        offset: selectedIndex * ITEM_HEIGHT,
+      scrollViewRef.current?.scrollTo({
+        y: selectedIndex * ITEM_HEIGHT,
         animated: false,
       });
     }
@@ -198,8 +197,8 @@ function WheelColumn({
     let index = Math.round(offsetY / ITEM_HEIGHT);
     if (index < 0) index = 0;
     if (index >= items.length) index = items.length - 1;
-    flatListRef.current?.scrollToOffset({
-      offset: index * ITEM_HEIGHT,
+    scrollViewRef.current?.scrollTo({
+      y: index * ITEM_HEIGHT,
       animated: true,
     });
     if (items[index] !== selectedValue) {
@@ -210,37 +209,30 @@ function WheelColumn({
 
   return (
     <View style={[styles.wheelColumn, { width }]}>
-      <FlatList
-        ref={flatListRef}
-        data={items}
-        keyExtractor={(item) => String(item)}
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.wheelContent}
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={true}
+        nestedScrollEnabled
         onScrollBeginDrag={handleScrollBegin}
         onMomentumScrollEnd={handleMomentumEnd}
         onScrollEndDrag={handleScrollEndDrag}
-        getItemLayout={(_, index) => ({
-          length: ITEM_HEIGHT,
-          offset: ITEM_HEIGHT * index,
-          index,
-        })}
-        onScrollToIndexFailed={() => {}}
-        initialScrollIndex={selectedIndex >= 0 ? selectedIndex : 0}
-        ListHeaderComponent={<View style={{ height: ITEM_HEIGHT }} />}
-        ListFooterComponent={<View style={{ height: ITEM_HEIGHT }} />}
-        renderItem={({ item, index }) => {
+      >
+        <View style={{ height: ITEM_HEIGHT }} />
+        {items.map((item, index) => {
           const isSelected = item === selectedValue;
           const label = formatItem ? formatItem(item) : String(item);
           return (
             <TouchableOpacity
+              key={String(item)}
               activeOpacity={0.7}
               style={[styles.wheelItem, { height: ITEM_HEIGHT }]}
               onPress={() => {
                 onSelect(item);
-                flatListRef.current?.scrollToOffset({
-                  offset: index * ITEM_HEIGHT,
+                scrollViewRef.current?.scrollTo({
+                  y: index * ITEM_HEIGHT,
                   animated: true,
                 });
               }}
@@ -255,8 +247,9 @@ function WheelColumn({
               </Text>
             </TouchableOpacity>
           );
-        }}
-      />
+        })}
+        <View style={{ height: ITEM_HEIGHT }} />
+      </ScrollView>
     </View>
   );
 }
@@ -326,13 +319,23 @@ export default function EditAlarmScreen({ navigation, route }) {
   // Listen for captured photo returned from Camera via route params
   useEffect(() => {
     const returnedPhoto =
+      route?.params?.capturedReferencePhoto ||
       route?.params?.referencePhoto ||
       route?.params?.photoUri ||
       route?.params?.photo;
     if (returnedPhoto) {
       setReferencePhoto(returnedPhoto);
+      if (route?.params?.capturedReferencePhoto) {
+        navigation?.setParams?.({ capturedReferencePhoto: undefined });
+      }
     }
-  }, [route?.params?.referencePhoto, route?.params?.photoUri, route?.params?.photo]);
+  }, [
+    navigation,
+    route?.params?.capturedReferencePhoto,
+    route?.params?.referencePhoto,
+    route?.params?.photoUri,
+    route?.params?.photo,
+  ]);
 
   // Derive 12-hour values for picker
   const { hour12, period } = useMemo(() => get12HourFrom24(hour), [hour]);
@@ -385,9 +388,6 @@ export default function EditAlarmScreen({ navigation, route }) {
       navigation.navigate('Camera', {
         alarmId,
         mode: 'reference',
-        onCapture: (capturedUri) => {
-          setReferencePhoto(capturedUri);
-        },
       });
     }
   }, [navigation, alarmId]);
@@ -515,7 +515,7 @@ export default function EditAlarmScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Screen Header Bar */}
       <View style={styles.topBar}>
@@ -572,7 +572,7 @@ export default function EditAlarmScreen({ navigation, route }) {
         </View>
 
         {/* Custom Scroll-Wheel Style Picker Card */}
-        <View style={styles.card}>
+        <GlassSurface style={styles.card}>
           <Text style={styles.cardHeaderTitle}>SELECT TIME</Text>
 
           <View style={styles.wheelPickerContainer}>
@@ -650,10 +650,10 @@ export default function EditAlarmScreen({ navigation, route }) {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </GlassSurface>
 
         {/* Alarm Label Section */}
-        <View style={styles.card}>
+        <GlassSurface style={styles.card}>
           <Text style={styles.cardHeaderTitle}>ALARM LABEL</Text>
           <View style={styles.inputContainer}>
             <TextInput
@@ -661,7 +661,7 @@ export default function EditAlarmScreen({ navigation, route }) {
               value={label}
               onChangeText={setLabel}
               placeholder="Alarm label"
-              placeholderTextColor="#666666"
+              placeholderTextColor="#8E8E93"
               maxLength={36}
               returnKeyType="done"
               clearButtonMode="while-editing"
@@ -676,10 +676,10 @@ export default function EditAlarmScreen({ navigation, route }) {
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        </GlassSurface>
 
         {/* Day Selector Section */}
-        <View style={styles.card}>
+        <GlassSurface style={styles.card}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardHeaderTitle}>REPEAT</Text>
             <Text style={styles.cardSubtitle}>{daysSubtitle}</Text>
@@ -741,10 +741,10 @@ export default function EditAlarmScreen({ navigation, route }) {
               <Text style={styles.presetChipText}>Once</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </GlassSurface>
 
         {/* Reference Photo Challenge Section */}
-        <View style={styles.card}>
+        <GlassSurface style={styles.card}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardHeaderTitle}>PHOTO CHALLENGE</Text>
             <View style={styles.activeTag}>
@@ -808,7 +808,7 @@ export default function EditAlarmScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </GlassSurface>
 
         {/* Bottom Actions: Save & Delete Buttons */}
         <View style={styles.bottomActionsContainer}>
@@ -851,8 +851,8 @@ export { EditAlarmScreen };
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#121212',
-    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight || 20 : 0,
+    backgroundColor: '#F7F7F9',
+    paddingTop: 0,
   },
   topBar: {
     height: 56,
@@ -861,25 +861,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
-    backgroundColor: '#121212',
+    borderBottomColor: '#E5E5EA',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
   },
   topBarButton: {
     minWidth: 64,
   },
   topBarCancelText: {
-    color: '#888888',
+    color: '#6B6B73',
     fontSize: 16,
     fontWeight: '500',
   },
   topBarTitle: {
-    color: '#FFFFFF',
+    color: '#111111',
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
   },
   topBarSaveText: {
-    color: '#6C63FF',
+    color: '#111111',
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'right',
@@ -912,21 +912,21 @@ const styles = StyleSheet.create({
     fontSize: 58,
     lineHeight: 64,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#111111',
     letterSpacing: -1,
   },
   timeColon: {
     fontSize: 52,
     lineHeight: 60,
     fontWeight: '700',
-    color: '#6C63FF',
+    color: '#111111',
     marginHorizontal: 4,
     marginTop: -4,
   },
   periodPill: {
-    backgroundColor: 'rgba(108, 99, 255, 0.18)',
+    backgroundColor: 'rgba(17, 17, 17, 0.06)',
     borderWidth: 1,
-    borderColor: '#6C63FF',
+    borderColor: 'rgba(17, 17, 17, 0.12)',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   periodPillText: {
-    color: '#6C63FF',
+    color: '#111111',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -943,23 +943,24 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     fontWeight: '500',
-    color: '#888888',
+    color: '#6B6B73',
     textAlign: 'center',
   },
 
   /* Card Containers */
   card: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.68)',
+    borderRadius: 24,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#262626',
-    shadowColor: '#000000',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#7A7A85',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 4,
+    overflow: 'hidden',
   },
   cardTitleRow: {
     flexDirection: 'row',
@@ -971,12 +972,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1,
-    color: '#888888',
+    color: '#8E8E93',
     marginBottom: 10,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6C63FF',
+    color: '#6B6B73',
     fontWeight: '600',
   },
 
@@ -995,10 +996,10 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     height: ITEM_HEIGHT,
-    backgroundColor: 'rgba(108, 99, 255, 0.12)',
+    backgroundColor: 'rgba(17, 17, 17, 0.06)',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: 'rgba(108, 99, 255, 0.35)',
+    borderColor: 'rgba(17, 17, 17, 0.12)',
     borderRadius: 8,
   },
   wheelColumnsRow: {
@@ -1010,6 +1011,9 @@ const styles = StyleSheet.create({
   wheelColumn: {
     height: WHEEL_HEIGHT,
   },
+  wheelContent: {
+    alignItems: 'stretch',
+  },
   wheelColonContainer: {
     width: 20,
     height: WHEEL_HEIGHT,
@@ -1017,7 +1021,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wheelColonText: {
-    color: '#6C63FF',
+    color: '#111111',
     fontSize: 24,
     fontWeight: '700',
   },
@@ -1028,12 +1032,12 @@ const styles = StyleSheet.create({
   wheelItemText: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#555555',
+    color: '#8E8E93',
   },
   wheelItemTextSelected: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: '#111111',
   },
 
   /* Quick Period Row */
@@ -1043,26 +1047,26 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#282828',
+    borderTopColor: '#E5E5EA',
   },
   quickPeriodBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#262626',
+    backgroundColor: '#F1F1F4',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'transparent',
   },
   quickPeriodBtnActive: {
-    backgroundColor: 'rgba(108, 99, 255, 0.15)',
-    borderColor: '#6C63FF',
+    backgroundColor: '#111111',
+    borderColor: '#111111',
   },
   quickPeriodBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#888888',
+    color: '#6B6B73',
   },
   quickPeriodBtnTextActive: {
     color: '#FFFFFF',
@@ -1073,16 +1077,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#262626',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#303030',
+    borderColor: '#E5E5EA',
   },
   textInput: {
     flex: 1,
     height: 48,
-    color: '#FFFFFF',
+    color: '#111111',
     fontSize: 16,
   },
   clearBtn: {
@@ -1091,7 +1095,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clearBtnText: {
-    color: '#888888',
+    color: '#6B6B73',
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -1108,16 +1112,16 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#262626',
+    backgroundColor: '#F1F1F4',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: '#E5E5EA',
   },
   dayCircleSelected: {
-    backgroundColor: '#6C63FF',
-    borderColor: '#6C63FF',
-    shadowColor: '#6C63FF',
+    backgroundColor: '#111111',
+    borderColor: '#111111',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -1126,7 +1130,7 @@ const styles = StyleSheet.create({
   dayCircleText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#777777',
+    color: '#6B6B73',
   },
   dayCircleTextSelected: {
     color: '#FFFFFF',
@@ -1140,29 +1144,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#262626',
+    backgroundColor: '#F1F1F4',
   },
   presetChipText: {
     fontSize: 12,
-    color: '#888888',
+    color: '#6B6B73',
     fontWeight: '600',
   },
 
   /* Reference Photo Section */
   activeTag: {
-    backgroundColor: 'rgba(108, 99, 255, 0.2)',
+    backgroundColor: '#F1F1F4',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   activeTagText: {
-    color: '#6C63FF',
+    color: '#111111',
     fontSize: 11,
     fontWeight: '700',
   },
   helperText: {
     fontSize: 13,
-    color: '#888888',
+    color: '#6B6B73',
     marginBottom: 16,
     lineHeight: 18,
   },
@@ -1171,7 +1175,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   photoThumbnailWrapper: {
-    shadowColor: '#000000',
+    shadowColor: '#7A7A85',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -1182,9 +1186,9 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 16,
-    backgroundColor: '#262626',
+    backgroundColor: '#F1F1F4',
     borderWidth: 2,
-    borderColor: '#6C63FF',
+    borderColor: '#D1D1D6',
   },
   photoActionsWrapper: {
     width: '100%',
@@ -1199,9 +1203,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#262626',
+    backgroundColor: '#111111',
     borderWidth: 1,
-    borderColor: '#6C63FF',
+    borderColor: '#111111',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -1234,13 +1238,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   saveButton: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#111111',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    shadowColor: '#6C63FF',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
@@ -1255,7 +1259,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   deleteButton: {
-    backgroundColor: '#FF4757',
+    backgroundColor: '#D92D20',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
