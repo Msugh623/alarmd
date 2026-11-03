@@ -1,0 +1,17 @@
+diff --git a/node_modules/expo-modules-core/android/cmake/common.cmake b/node_modules/expo-modules-core/android/cmake/common.cmake
+--- a/node_modules/expo-modules-core/android/cmake/common.cmake
++++ b/node_modules/expo-modules-core/android/cmake/common.cmake
+@@ -22,6 +22,7 @@ target_link_libraries(
+   ReactAndroid::jsi
+   fbjni::fbjni
+   ReactAndroid::reactnative
++  c++_shared
+ )
+ 
+ include(${CMAKE_SOURCE_DIR}/cmake/pch-ccache.cmake)
+diff --git a/node_modules/expo-modules-core/android/cmake/modulesV2.cmake b/node_modules/expo-modules-core/android/cmake/modulesV2.cmake
+--- a/node_modules/expo-modules-core/android/cmake/modulesV2.cmake
++++ b/node_modules/expo-modules-core/android/cmake/modulesV2.cmake
+@@ -1 +1,2 @@
+ add_subdirectory(${EXPO_MODULES_V2_CPP_DIR} expo-modules-v2-build)
++target_link_libraries(expo-modules-v2 PRIVATE c++_shared)

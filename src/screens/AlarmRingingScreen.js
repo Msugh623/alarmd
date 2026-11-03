@@ -7,8 +7,10 @@ import {
   Animated,
   Vibration,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
+import { usePreventRemove } from '@react-navigation/native';
 import { useAlarms } from '../context/AlarmContext';
 import GlassSurface from '../components/GlassSurface';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,21 +42,42 @@ function getFormattedTime(date = new Date()) {
 }
 
 export default function AlarmRingingScreen({ navigation, route }) {
-  const { activeAlarm, dismissActiveAlarm } = useAlarms ? useAlarms() : {};
+  const { activeAlarm, dismissActiveAlarm } = useAlarms();
   const currentAlarm = activeAlarm || route?.params?.alarm || {};
   const alarmLabel = currentAlarm?.label || currentAlarm?.title || 'Wake Up!';
+  const alarmId = activeAlarm?.id || currentAlarm?.id || route?.params?.alarmId;
+  const photoChallengePassed =
+    route?.params?.photoChallengePassed === alarmId && Boolean(alarmId);
+  const challengeCompletionHandled = useRef(false);
 
-  // Detect whether alarm requires a reference photo for dismissal
-  const hasReferencePhoto = Boolean(
+  const referencePhotoUri =
     currentAlarm?.referencePhoto ||
     currentAlarm?.referencePhotoUri ||
     currentAlarm?.referenceImage ||
     currentAlarm?.photoUri ||
     currentAlarm?.photo ||
     currentAlarm?.imageUri ||
-    currentAlarm?.targetPhotoUri ||
-    currentAlarm?.hasReferencePhoto
-  );
+    currentAlarm?.targetPhotoUri;
+  const hasReferencePhoto = Boolean(referencePhotoUri);
+
+  usePreventRemove(!photoChallengePassed, () => {
+    Alert.alert('Photo required', 'Take a photo matching the alarm image to stop it.');
+  });
+
+  useEffect(() => {
+    if (!photoChallengePassed || challengeCompletionHandled.current) {
+      return;
+    }
+
+    challengeCompletionHandled.current = true;
+    Promise.resolve()
+      .then(() => dismissActiveAlarm())
+      .then(() => navigation.replace('Home'))
+      .catch((error) => {
+        challengeCompletionHandled.current = false;
+        console.error('Failed to finish the alarm photo challenge:', error);
+      });
+  }, [dismissActiveAlarm, navigation, photoChallengePassed]);
 
   // Time state for live ticking clock
   const [currentTime, setCurrentTime] = useState(() => getFormattedTime());
@@ -163,19 +186,16 @@ export default function AlarmRingingScreen({ navigation, route }) {
     alarmPlayer.pause();
   };
 
-  // 5. Sound and Vibration on mount & cleanup
+  // Keep the alarm running while the camera challenge is open.
   useEffect(() => {
     let isMounted = true;
 
-    // Start repeating vibration pattern
-    const VIBRATION_PATTERN = [500, 500, 500, 500];
     try {
-      Vibration.vibrate(VIBRATION_PATTERN, true);
-    } catch (e) {
-      console.warn('Vibration failed:', e);
+      Vibration.vibrate([500, 500, 500, 500], true);
+    } catch (error) {
+      console.warn('Vibration failed:', error);
     }
 
-    // Start playing alarm sound on loop
     const startAlarmSound = async () => {
       try {
         await setAudioModeAsync({
@@ -189,8 +209,7 @@ export default function AlarmRingingScreen({ navigation, route }) {
         alarmPlayer.volume = 1;
         alarmPlayer.play();
       } catch (error) {
-        // If sound fails or network is offline, vibration pattern continues as fallback
-        console.warn('Alarm sound could not be played, continuing with vibration fallback:', error);
+        console.warn('Alarm sound could not be played:', error);
       }
     };
 
@@ -203,28 +222,13 @@ export default function AlarmRingingScreen({ navigation, route }) {
   }, [alarmPlayer]);
 
   // Handler for "Take Photo" press
-  const handleTakePhoto = async () => {
-    stopSoundAndVibration();
+  const handleTakePhoto = () => {
     if (navigation?.navigate) {
       navigation.navigate('Camera', {
         alarmId: currentAlarm?.id,
+        referencePhotoUri,
         mode: 'dismiss',
       });
-    }
-  };
-
-  // Handler for simple "Dismiss" press (no reference photo)
-  const handleDismiss = async () => {
-    stopSoundAndVibration();
-    if (typeof dismissActiveAlarm === 'function') {
-      try {
-        await dismissActiveAlarm();
-      } catch (err) {
-        console.warn('Failed to dismiss active alarm:', err);
-      }
-    }
-    if (navigation?.canGoBack && navigation.canGoBack()) {
-      navigation.goBack();
     }
   };
 
@@ -277,38 +281,25 @@ export default function AlarmRingingScreen({ navigation, route }) {
 
       {/* Bottom Action Section */}
       <View style={styles.bottomSection}>
-        {hasReferencePhoto ? (
-          <Animated.View
-            style={[
-              styles.actionButtonWrapper,
-              { transform: [{ scale: buttonScale }] },
-            ]}
+        <Animated.View
+          style={[
+            styles.actionButtonWrapper,
+            { transform: [{ scale: buttonScale }] },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.photoButton}
+            activeOpacity={0.85}
+            onPress={handleTakePhoto}
           >
-            <TouchableOpacity
-              style={styles.photoButton}
-              activeOpacity={0.85}
-              onPress={handleTakePhoto}
-            >
-              <Text style={styles.photoButtonText}>📸 Take Photo to Dismiss</Text>
-            </TouchableOpacity>
-            <Text style={styles.instructionText}>
-              Match your reference photo to shut off the alarm
-            </Text>
-          </Animated.View>
-        ) : (
-          <View style={styles.actionButtonWrapper}>
-            <TouchableOpacity
-              style={styles.dismissButton}
-              activeOpacity={0.8}
-              onPress={handleDismiss}
-            >
-              <Text style={styles.dismissButtonText}>Dismiss</Text>
-            </TouchableOpacity>
-            <Text style={styles.instructionText}>
-              Tap to dismiss this alarm
-            </Text>
-          </View>
-        )}
+            <Text style={styles.photoButtonText}>📸 Take Photo to Dismiss</Text>
+          </TouchableOpacity>
+          <Text style={styles.instructionText}>
+            {hasReferencePhoto
+              ? 'Match your reference photo to shut off the alarm'
+              : 'This alarm has no reference image; a matching photo is required to stop it.'}
+          </Text>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
@@ -445,27 +436,6 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   photoButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  dismissButton: {
-    backgroundColor: '#111111',
-    borderColor: '#111111',
-    borderWidth: 1,
-    width: '100%',
-    paddingVertical: 18,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  dismissButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',

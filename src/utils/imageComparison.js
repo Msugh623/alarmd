@@ -17,7 +17,7 @@ export async function compareImages(referenceUri, capturedUri) {
   // A real app would use TensorFlow Lite or a cloud vision API
 
   const THUMBNAIL_SIZE = 16;
-  const MATCH_THRESHOLD = 0.55; // Fairly lenient - same general scene/object should pass
+  const MATCH_THRESHOLD = 0.75;
 
   if (!referenceUri || !capturedUri) {
     return { match: false, score: 0 };
@@ -71,8 +71,7 @@ export async function compareImages(referenceUri, capturedUri) {
     const capBytes = base64ToBytes(capBase64);
 
     if (refBytes.length === 0 || capBytes.length === 0) {
-      // If unable to extract bytes, be lenient and allow alarm dismissal
-      return { match: true, score: 1.0 };
+      return { match: false, score: 0 };
     }
 
     // Compare using multiple strategies and average
@@ -86,8 +85,7 @@ export async function compareImages(referenceUri, capturedUri) {
     };
   } catch (error) {
     console.error('Image comparison failed:', error);
-    // On error, be lenient and allow dismissal
-    return { match: true, score: 1.0 };
+    return { match: false, score: 0 };
   }
 }
 

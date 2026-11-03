@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -16,7 +16,7 @@ import { useAlarms } from '../context/AlarmContext';
 import GlassSurface from '../components/GlassSurface';
 import { compareImages } from '../utils/imageComparison';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, usePreventRemove } from '@react-navigation/native';
 
 export default function CameraScreen({ navigation, route }) {
   const cameraRef = useRef(null);
@@ -30,8 +30,9 @@ export default function CameraScreen({ navigation, route }) {
   const [cameraError, setCameraError] = useState(null);
   const [cameraKey, setCameraKey] = useState(0);
   const [isTorchEnabled, setIsTorchEnabled] = useState(false);
+  const [photoChallengePassed, setPhotoChallengePassed] = useState(false);
 
-  const { setReferencePhoto, dismissActiveAlarm, activeAlarm, alarms } = useAlarms?.() || {};
+  const { setReferencePhoto, activeAlarm, alarms } = useAlarms?.() || {};
 
   const mode = route?.params?.mode || 'reference';
   const alarmId = route?.params?.alarmId;
@@ -52,6 +53,19 @@ export default function CameraScreen({ navigation, route }) {
       setShowToast(false);
     }, duration);
   };
+
+  usePreventRemove(isDismissMode && !photoChallengePassed, () => {
+    displayToast('Take a matching photo to stop the alarm.');
+  });
+
+  useEffect(() => {
+    if (photoChallengePassed) {
+      navigation?.navigate?.('AlarmRinging', {
+        alarmId,
+        photoChallengePassed: alarmId,
+      });
+    }
+  }, [alarmId, navigation, photoChallengePassed]);
 
   const handleCapture = async () => {
     if (!cameraReady || !cameraRef.current || isProcessing) return;
@@ -96,22 +110,17 @@ export default function CameraScreen({ navigation, route }) {
         }
 
         const matchResult = await compareImages(referencePhotoUri, destinationUri);
-        const similarity =
-          typeof matchResult === 'number'
-            ? matchResult
-            : (matchResult?.similarity ?? matchResult?.score ?? 0);
-
-        if (similarity > 0.75) {
-          // Photo matched reference! Dismiss active alarm and navigate to Home
-          if (dismissActiveAlarm) {
-            await dismissActiveAlarm();
-          }
+        if (matchResult.match === true && alarmId) {
           setIsProcessing(false);
-          navigation?.navigate?.('Home');
+          setPhotoChallengePassed(true);
         } else {
           // No match: keep alarm ringing and allow retake
           setIsProcessing(false);
-          displayToast('No match! Try again.');
+          displayToast(
+            matchResult.match
+              ? 'Could not verify this alarm. Try again.'
+              : 'No match! Try again.'
+          );
         }
       }
     } catch (error) {
