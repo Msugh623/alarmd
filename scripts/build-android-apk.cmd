@@ -16,7 +16,7 @@ node scripts\prepare-android-build.cjs
 if errorlevel 1 exit /b %ERRORLEVEL%
 
 cd android
-call gradlew.bat clean assembleRelease
+call gradlew.bat assembleRelease
 set "BUILD_EXIT=%ERRORLEVEL%"
 cd /d "%PROJECT_DIR%"
 exit /b %BUILD_EXIT%

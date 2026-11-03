@@ -30,7 +30,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "postinstall": "patch-package",
-    "build:android": "scripts\\build-android-apk.cmd"
+    "build:android": "scripts\\build-android-apk.cmd",
+    "postbuild:android": "node scripts\\postbuild-android.cjs"
   },
   "private": true,
   "devDependencies": {

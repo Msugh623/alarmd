@@ -13,7 +13,8 @@ if (!codegenDir || !fs.existsSync(codegenDir)) {
 }
 
 const gradleFile = path.join(process.cwd(), "android", "app", "build.gradle");
-let gradle = fs.readFileSync(gradleFile, "utf8");
+const originalGradle = fs.readFileSync(gradleFile, "utf8");
+let gradle = originalGradle;
 
 function replaceRequired(pattern, replacement, description) {
   if (!pattern.test(gradle)) {
@@ -38,7 +39,7 @@ replaceRequired(
 if (/arguments "-DCMAKE_OBJECT_PATH_MAX=\d+"/.test(gradle)) {
   gradle = gradle.replace(
     /arguments "-DCMAKE_OBJECT_PATH_MAX=\d+"/,
-    'arguments "-DCMAKE_OBJECT_PATH_MAX=120"',
+    'arguments "-DCMAKE_OBJECT_PATH_MAX=240"',
   );
 } else {
   replaceRequired(
@@ -46,10 +47,16 @@ if (/arguments "-DCMAKE_OBJECT_PATH_MAX=\d+"/.test(gradle)) {
     (_, indentation) =>
       `${indentation}defaultConfig {\n` +
       `${indentation}    externalNativeBuild {\n` +
-      `${indentation}        cmake { arguments "-DCMAKE_OBJECT_PATH_MAX=120" }\n` +
+      `${indentation}        cmake { arguments "-DCMAKE_OBJECT_PATH_MAX=240" }\n` +
       `${indentation}    }`,
     "defaultConfig block",
   );
 }
 
-fs.writeFileSync(gradleFile, gradle);
+if (gradle !== originalGradle) {
+  fs.writeFileSync(gradleFile, gradle);
+  fs.rmSync(path.join(process.cwd(), "android", "app", ".cxx"), {
+    recursive: true,
+    force: true,
+  });
+}
